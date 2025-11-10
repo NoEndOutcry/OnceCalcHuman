@@ -145,11 +145,11 @@
         .result-value.medium, .big-number.medium { color: #f6c23e; }
         .result-value.low, .big-number.low { color: var(--error); }
 
-        /* ---- Детализация рейтинга и черт ---- */
+        /* ---- Обновлённый дизайн: градуированные шкалы ---- */
         .breakdown {
             background: #1e213add;
             border-radius: 10px;
-            padding: 15, 15px;
+            padding: 15px;
             margin: 15px 0;
             border: 1.5px solid #3de9c355;
         }
@@ -161,34 +161,86 @@
         }
         .option {
             display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 8px 12px;
-            margin-bottom: 6px;
+            flex-direction: column;
+            padding: 10px 12px;
+            margin-bottom: 10px;
             background: #242646cc;
-            border-radius: 6px;
+            border-radius: 8px;
             border-left: 3px solid transparent;
             transition: all .2s;
         }
-        .option.target   { border-left-color: #13ec8d; background:#24264699; box-shadow:0 0 8px #13ec8d33; }
         .option.high     { border-left-color: #13ec8d; }
         .option.medium   { border-left-color: #f6c23e; }
         .option.low      { border-left-color: #ff5151; }
 
-        .option-name { font-weight:600; color:#e9f5fb; font-size:.95rem; }
-        .option-name .badge {
-            display:inline-block; padding:2px 8px; border-radius:4px;
-            font-size:.75rem; margin-left:8px; font-weight:700;
+        .option-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
         }
-        .option-name .badge.target-badge { background:#13ec8d; color:#1e213a; }
+        .option-name {
+            font-weight: 600;
+            color: #e9f5fb;
+            font-size: .95rem;
+        }
+        .option-name .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: .75rem;
+            margin-left: 8px;
+            font-weight: 700;
+        }
+        .option-name .badge.target-badge {
+            background: #13ec8d;
+            color: #1e213a;
+        }
 
-        .option-prob { font-weight:700; font-size:1.05rem; }
+        /* Градуированная шкала: 10 сегментов */
+        .trait-bar-container {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            height: 28px;
+            background: #1a1d33;
+            border-radius: 6px;
+            padding: 0 6px;
+            position: relative;
+            overflow: hidden;
+        }
+        .trait-bar-segments {
+            display: flex;
+            flex: 1;
+            gap: 2px;
+        }
+        .trait-segment {
+            flex: 1;
+            height: 18px;
+            background: #2a2e48;
+            border-radius: 3px;
+            position: relative;
+            transition: background 0.4s ease;
+        }
+        .trait-segment.filled {
+            background: linear-gradient(90deg, #198cff, #3de9c3);
+        }
+        .trait-segment.filled.high   { background: linear-gradient(90deg, #13ec8d, #5fffc0); }
+        .trait-segment.filled.medium { background: linear-gradient(90deg, #f6c23e, #ffdd88); }
+        .trait-segment.filled.low    { background: linear-gradient(90deg, #ff5151, #ff8888); }
 
-        .option-bar { width:100%; height:4px; background:#1e213a; border-radius:2px; margin-top:4px; overflow:hidden; }
-        .option-bar-fill { height:100%; background:linear-gradient(90deg,#198cff,#3de9c3); transition:width .5s ease; }
-        .option.high   .option-bar-fill { background:linear-gradient(90deg,#13ec8d,#5fffc0); }
-        .option.medium .option-bar-fill { background:linear-gradient(90deg,#f6c23e,#ffdd88); }
-        .option.low    .option-bar-fill { background:linear-gradient(90deg,#ff5151,#ff8888); }
+        .trait-percent-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 0.78rem;
+            font-weight: 700;
+            color: #fff;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+            pointer-events: none;
+            z-index: 2;
+        }
 
         .final-result {
             margin-top:14px; padding:23px 8px 13px 8px;
@@ -353,7 +405,6 @@ document.getElementById('numTraits').dispatchEvent(new Event('input'));
 
 /* ---------- Основная функция расчёта ---------- */
 function calculateFusion() {
-    /* ---- 1. Тип ---- */
     const sameType = document.getElementById('sameType').value;
     const typeMat = parseInt(document.getElementById('typeMaterials').value) || 0;
     let typeProb = 100;
@@ -361,17 +412,15 @@ function calculateFusion() {
         typeProb = typeMat === 0 ? 50 : typeMat === 1 ? 65 : typeMat === 2 ? 75 : 80;
     }
 
-    /* ---- 2. Рейтинг ---- */
     const r1 = document.getElementById('rating1').value.trim();
     const r2 = document.getElementById('rating2').value.trim();
     const targetSel = document.getElementById('targetRating').value;
     const ratingDist = calculateRatingDistribution(r1, r2, targetSel);
 
-    /* ---- 3. Черты ---- */
     const parents = document.querySelectorAll('.trait-parents');
     const mats    = document.querySelectorAll('.trait-materials');
     let traitsProb = 1;
-    const traitProbs = []; // для детализации
+    const traitProbs = [];
 
     for (let i = 0; i < parents.length; i++) {
         const p = parseInt(parents[i].value) || 0;
@@ -379,13 +428,11 @@ function calculateFusion() {
         let prb = 0;
         if (p === 2) prb = 1;
         else if (p === 1) prb = 0.5 + m * 0.1;
-        // p===0 → prb=0
         traitProbs.push({ index: i + 1, prob: prb * 100 });
         traitsProb *= prb;
     }
     traitsProb *= 100;
 
-    /* ---- 4. Девиантная черта ---- */
     const wantDev = document.getElementById('wantDeviantTrait').value;
     const devMat = parseInt(document.getElementById('deviantMaterials').value) || 0;
     let deviantProb = 100;
@@ -397,17 +444,12 @@ function calculateFusion() {
         devItem.style.display = 'none';
     }
 
-    /* ---- 5. Финальный шанс ---- */
     const ratingProb = ratingDist.targetProb;
-    const total = (typeProb / 100) *
-                  (ratingProb / 100) *
-                  (traitsProb / 100) *
-                  (wantDev === 'yes' ? deviantProb / 100 : 1) * 100;
+    const total = (typeProb / 100) * (ratingProb / 100) * (traitsProb / 100) * (wantDev === 'yes' ? deviantProb / 100 : 1) * 100;
 
-    /* ---- 6. Вывод ---- */
     document.getElementById('typeProb').textContent = typeProb.toFixed(1) + '%';
     displayRatingBreakdown(ratingDist);
-    displayTraitsBreakdown(traitProbs); // НОВОЕ
+    displayTraitsBreakdown(traitProbs);
     document.getElementById('traitsProb').textContent = traitsProb.toFixed(1) + '%';
     if (wantDev === 'yes') document.getElementById('deviantProb').textContent = deviantProb.toFixed(1) + '%';
 
@@ -426,47 +468,107 @@ function calculateFusion() {
     results.scrollIntoView({behavior: 'smooth', block: 'nearest'});
 }
 
-/* ---------- Детализация черт ---------- */
+/* ---------- Детализация черт (10 градаций) ---------- */
 function displayTraitsBreakdown(traits) {
     const container = document.getElementById('traitsOptions');
     container.innerHTML = '';
     if (traits.length === 0) {
-        container.innerHTML = '<div style="text-align:center;color:#a7ecfb;font-style:italic;">Нет черт для анализа</div>';
+        container.innerHTML = '<div style="text-align:center;color:#a7ecfb;font-style:italic;padding:8px;">Нет черт для анализа</div>';
         return;
     }
 
     traits.forEach(t => {
-        const prob = t.prob;
+        const prob = Math.round(t.prob * 10) / 10;
+        const filledCount = Math.floor(prob / 10);
         const level = prob >= 70 ? 'high' : prob >= 40 ? 'medium' : 'low';
 
         const opt = document.createElement('div');
         opt.className = `option ${level}`;
 
+        const header = document.createElement('div');
+        header.className = 'option-header';
         const name = document.createElement('span');
         name.className = 'option-name';
         name.textContent = `Черта ${t.index}`;
-        opt.appendChild(name);
+        header.appendChild(name);
+        opt.appendChild(header);
 
-        const probSpan = document.createElement('span');
-        probSpan.className = 'option-prob';
-        probSpan.textContent = prob.toFixed(1) + '%';
-        opt.appendChild(probSpan);
+        const barContainer = document.createElement('div');
+        barContainer.className = 'trait-bar-container';
 
-        const bar = document.createElement('div');
-        bar.className = 'option-bar';
-        const fill = document.createElement('div');
-        fill.className = 'option-bar-fill';
-        fill.style.width = `${Math.min(100, prob * 1.43)}%`; // 70% → 100%
-        bar.appendChild(fill);
+        const segments = document.createElement('div');
+        segments.className = 'trait-bar-segments';
 
-        const wrapper = document.createElement('div');
-        wrapper.appendChild.Opt;
-        wrapper.appendChild(bar);
-        container.appendChild(wrapper);
+        for (let i = 0; i < 10; i++) {
+            const seg = document.createElement('div');
+            seg.className = 'trait-segment';
+            if (i < filledCount) seg.classList.add('filled', level);
+            segments.appendChild(seg);
+        }
+
+        const percentText = document.createElement('div');
+        percentText.className = 'trait-percent-text';
+        percentText.textContent = `${prob.toFixed(1)}%`;
+
+        barContainer.appendChild(segments);
+        barContainer.appendChild(percentText);
+        opt.appendChild(barContainer);
+        container.appendChild(opt);
     });
 }
 
-/* ---------- Остальные функции (рейтинг) — без изменений ---------- */
+/* ---------- Детализация рейтинга (10 градаций) ---------- */
+function displayRatingBreakdown(data) {
+    const container = document.getElementById('ratingOptions');
+    container.innerHTML = '';
+    const sorted = Object.entries(data.distribution).sort((a,b)=>b[1].prob - a[1].prob);
+    for (const [key, info] of sorted) {
+        const isTarget = key === data.targetKey;
+        const prob = info.prob;
+        const filledCount = Math.floor(prob / 10);
+        const level = prob >= 30 ? 'high' : prob >= 15 ? 'medium' : 'low';
+
+        const opt = document.createElement('div');
+        opt.className = `option ${isTarget ? 'high' : level}`;
+
+        const header = document.createElement('div');
+        header.className = 'option-header';
+        const name = document.createElement('span');
+        name.className = 'option-name';
+        name.textContent = key;
+        if (isTarget) {
+            const badge = document.createElement('span');
+            badge.className = 'badge target-badge';
+            badge.textContent = 'ЦЕЛЬ';
+            name.appendChild(badge);
+        }
+        header.appendChild(name);
+        opt.appendChild(header);
+
+        const barContainer = document.createElement('div');
+        barContainer.className = 'trait-bar-container';
+
+        const segments = document.createElement('div');
+        segments.className = 'trait-bar-segments';
+        for (let i = 0; i < 10; i++) {
+            const seg = document.createElement('div');
+            seg.className = 'trait-segment';
+            if (i < filledCount) seg.classList.add('filled', isTarget ? 'high' : level);
+            segments.appendChild(seg);
+        }
+
+        const percentText = document.createElement('div');
+        percentText.className = 'trait-percent-text';
+        percentText.textContent = `${prob.toFixed(1)}%`;
+
+        barContainer.appendChild(segments);
+        barContainer.appendChild(percentText);
+        opt.appendChild(barContainer);
+        container.appendChild(opt);
+    }
+}
+
+/* ---------- Расчёт рейтинга (без изменений) ---------- */
 function calculateRatingDistribution(r1s, r2s, targetSelection) {
     const parse = s => {
         const [m, p] = s.split('/').map(Number);
@@ -544,47 +646,6 @@ function calculateRatingDistribution(r1s, r2s, targetSelection) {
     }
 
     return {distribution, targetProb, targetKey};
-}
-
-function displayRatingBreakdown(data) {
-    const container = document.getElementById('ratingOptions');
-    container.innerHTML = '';
-    const sorted = Object.entries(data.distribution).sort((a,b)=>b[1].prob - a[1].prob);
-    for (const [key, info] of sorted) {
-        const isTarget = key === data.targetKey;
-        const typeClass = isTarget ? 'target' : info.type === 'upgrade' ? 'high' : info.type === 'downgrade' ? 'low' : 'medium';
-
-        const opt = document.createElement('div');
-        opt.className = `option ${typeClass}`;
-
-        const name = document.createElement('span');
-        name.className = 'option-name';
-        name.textContent = key;
-        if (isTarget) {
-            const badge = document.createElement('span');
-            badge.className = 'badge target-badge';
-            badge.textContent = 'ЦЕЛЬ';
-            name.appendChild(badge);
-        }
-        opt.appendChild(name);
-
-        const prob = document.createElement('span');
-        prob.className = 'option-prob';
-        prob.textContent = info.prob.toFixed(1) + '%';
-        opt.appendChild(prob);
-
-        const bar = document.createElement('div');
-        bar.className = 'option-bar';
-        const fill = document.createElement('div');
-        fill.className = 'option-bar-fill';
-        fill.style.width = `${Math.min(100, info.prob * 2)}%`;
-        bar.appendChild(fill);
-
-        const wrapper = document.createElement('div');
-        wrapper.appendChild(opt);
-        wrapper.appendChild(bar);
-        container.appendChild(wrapper);
-    }
 }
 </script>
 </body>
