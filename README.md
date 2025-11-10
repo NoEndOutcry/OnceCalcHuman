@@ -94,11 +94,6 @@
             .container { padding: 10vw 3vw; }
         }
         .traits-group { display: flex; gap: 15px; }
-        .trait-item label {
-            font-weight: 400;
-            color: #b7cbf7;
-            font-size: .98em;
-        }
         .calculate-btn {
             width: 100%;
             padding: .98em;
@@ -150,21 +145,21 @@
         .result-value.medium, .big-number.medium { color: #f6c23e; }
         .result-value.low, .big-number.low { color: var(--error); }
 
-        /* ---- Детализация рейтинга ---- */
-        .rating-breakdown {
+        /* ---- Детализация рейтинга и черт ---- */
+        .breakdown {
             background: #1e213add;
             border-radius: 10px;
-            padding: 15px;
+            padding: 15, 15px;
             margin: 15px 0;
             border: 1.5px solid #3de9c355;
         }
-        .rating-breakdown h4 {
+        .breakdown h4 {
             color: var(--accent);
             font-size: 1.05rem;
             margin-bottom: 12px;
             text-align: center;
         }
-        .rating-option {
+        .option {
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -175,25 +170,25 @@
             border-left: 3px solid transparent;
             transition: all .2s;
         }
-        .rating-option.target   { border-left-color: #13ec8d; background:#24264699; box-shadow:0 0 8px #13ec8d33; }
-        .rating-option.upgrade  { border-left-color: #ffc94a; }
-        .rating-option.downgrade{ border-left-color: #ff5151; }
-        .rating-option.same     { border-left-color: #198cff; }
+        .option.target   { border-left-color: #13ec8d; background:#24264699; box-shadow:0 0 8px #13ec8d33; }
+        .option.high     { border-left-color: #13ec8d; }
+        .option.medium   { border-left-color: #f6c23e; }
+        .option.low      { border-left-color: #ff5151; }
 
-        .rating-name { font-weight:600; color:#e9f5fb; font-size:.95rem; }
-        .rating-name .badge {
+        .option-name { font-weight:600; color:#e9f5fb; font-size:.95rem; }
+        .option-name .badge {
             display:inline-block; padding:2px 8px; border-radius:4px;
             font-size:.75rem; margin-left:8px; font-weight:700;
         }
-        .rating-name .badge.target-badge { background:#13ec8d; color:#1e213a; }
+        .option-name .badge.target-badge { background:#13ec8d; color:#1e213a; }
 
-        .rating-prob { font-weight:700; font-size:1.05rem; }
+        .option-prob { font-weight:700; font-size:1.05rem; }
 
-        .rating-bar { width:100%; height:4px; background:#1e213a; border-radius:2px; margin-top:4px; overflow:hidden; }
-        .rating-bar-fill { height:100%; background:linear-gradient(90deg,#198cff,#3de9c3); transition:width .5s ease; }
-        .rating-option.upgrade   .rating-bar-fill { background:linear-gradient(90deg,#ffc94a,#ffdd88); }
-        .rating-option.downgrade .rating-bar-fill { background:linear-gradient(90deg,#ff5151,#ff8888); }
-        .rating-option.target    .rating-bar-fill { background:linear-gradient(90deg,#13ec8d,#5fffc0); }
+        .option-bar { width:100%; height:4px; background:#1e213a; border-radius:2px; margin-top:4px; overflow:hidden; }
+        .option-bar-fill { height:100%; background:linear-gradient(90deg,#198cff,#3de9c3); transition:width .5s ease; }
+        .option.high   .option-bar-fill { background:linear-gradient(90deg,#13ec8d,#5fffc0); }
+        .option.medium .option-bar-fill { background:linear-gradient(90deg,#f6c23e,#ffdd88); }
+        .option.low    .option-bar-fill { background:linear-gradient(90deg,#ff5151,#ff8888); }
 
         .final-result {
             margin-top:14px; padding:23px 8px 13px 8px;
@@ -285,7 +280,7 @@
         </div>
     </div>
 
-    <button class="calculate-btn" onclick="calculateFusion()">🧮 Посчитать</button>
+    <button class="calculate-btn" onclick="calculateFusion()">Посчитать</button>
 
     <!-- Результаты -->
     <div class="results" id="results">
@@ -293,9 +288,16 @@
 
         <div class="result-item"><span class="result-label">Вероятность типа</span><span class="result-value" id="typeProb">—</span></div>
 
-        <div class="rating-breakdown" id="ratingBreakdown">
-            <h4>📊 Распределение вероятностей рейтинга</h4>
+        <!-- Детализация рейтинга -->
+        <div class="breakdown" id="ratingBreakdown">
+            <h4>Распределение вероятностей рейтинга</h4>
             <div id="ratingOptions"></div>
+        </div>
+
+        <!-- Детализация черт -->
+        <div class="breakdown" id="traitsBreakdown">
+            <h4>Вероятность получения каждой черты</h4>
+            <div id="traitsOptions"></div>
         </div>
 
         <div class="result-item"><span class="result-label">Все черты</span><span class="result-value" id="traitsProb">—</span></div>
@@ -313,7 +315,7 @@
             <strong>Интерпретация:</strong><br>
             • <span style="color:#13ec8d;">≥50%</span> — Высокий шанс (1–2 попытки)<br>
             • <span style="color:#f6c23e;">20–49%</span> — Средний (2–5 попыток)<br>
-            • <span style="color:#ff5151;">&lt;20%</span> — Низкий (5+ попыток)
+            • <span style="color:#ff5151;"><20%</span> — Низкий (5+ попыток)
         </div>
     </div>
 </div>
@@ -369,16 +371,19 @@ function calculateFusion() {
     const parents = document.querySelectorAll('.trait-parents');
     const mats    = document.querySelectorAll('.trait-materials');
     let traitsProb = 1;
+    const traitProbs = []; // для детализации
+
     for (let i = 0; i < parents.length; i++) {
         const p = parseInt(parents[i].value) || 0;
         const m = parseInt(mats[i].value) || 0;
         let prb = 0;
         if (p === 2) prb = 1;
         else if (p === 1) prb = 0.5 + m * 0.1;
-        // p===0 → prb=0 (невозможно)
+        // p===0 → prb=0
+        traitProbs.push({ index: i + 1, prob: prb * 100 });
         traitsProb *= prb;
     }
-    traitsProb *= 100; // в %
+    traitsProb *= 100;
 
     /* ---- 4. Девиантная черта ---- */
     const wantDev = document.getElementById('wantDeviantTrait').value;
@@ -402,6 +407,7 @@ function calculateFusion() {
     /* ---- 6. Вывод ---- */
     document.getElementById('typeProb').textContent = typeProb.toFixed(1) + '%';
     displayRatingBreakdown(ratingDist);
+    displayTraitsBreakdown(traitProbs); // НОВОЕ
     document.getElementById('traitsProb').textContent = traitsProb.toFixed(1) + '%';
     if (wantDev === 'yes') document.getElementById('deviantProb').textContent = deviantProb.toFixed(1) + '%';
 
@@ -420,7 +426,47 @@ function calculateFusion() {
     results.scrollIntoView({behavior: 'smooth', block: 'nearest'});
 }
 
-/* ---------- Расчёт распределения рейтинга ---------- */
+/* ---------- Детализация черт ---------- */
+function displayTraitsBreakdown(traits) {
+    const container = document.getElementById('traitsOptions');
+    container.innerHTML = '';
+    if (traits.length === 0) {
+        container.innerHTML = '<div style="text-align:center;color:#a7ecfb;font-style:italic;">Нет черт для анализа</div>';
+        return;
+    }
+
+    traits.forEach(t => {
+        const prob = t.prob;
+        const level = prob >= 70 ? 'high' : prob >= 40 ? 'medium' : 'low';
+
+        const opt = document.createElement('div');
+        opt.className = `option ${level}`;
+
+        const name = document.createElement('span');
+        name.className = 'option-name';
+        name.textContent = `Черта ${t.index}`;
+        opt.appendChild(name);
+
+        const probSpan = document.createElement('span');
+        probSpan.className = 'option-prob';
+        probSpan.textContent = prob.toFixed(1) + '%';
+        opt.appendChild(probSpan);
+
+        const bar = document.createElement('div');
+        bar.className = 'option-bar';
+        const fill = document.createElement('div');
+        fill.className = 'option-bar-fill';
+        fill.style.width = `${Math.min(100, prob * 1.43)}%`; // 70% → 100%
+        bar.appendChild(fill);
+
+        const wrapper = document.createElement('div');
+        wrapper.appendChild.Opt;
+        wrapper.appendChild(bar);
+        container.appendChild(wrapper);
+    });
+}
+
+/* ---------- Остальные функции (рейтинг) — без изменений ---------- */
 function calculateRatingDistribution(r1s, r2s, targetSelection) {
     const parse = s => {
         const [m, p] = s.split('/').map(Number);
@@ -434,43 +480,38 @@ function calculateRatingDistribution(r1s, r2s, targetSelection) {
     const curP = Math.round(avgP);
     const sameKey = `${curM}/${curP}`;
 
-    // Базовые вероятности (можно подправить под реальные данные)
     const sameProb      = 45;
     const upgradeProb   = 32;
     const downgradeProb = 17;
-    const extremeProb   = 6;   // ±2
+    const extremeProb   = 6;
 
     const distribution = {};
 
-    // ---- same ----
     distribution[sameKey] = {prob: sameProb, type: 'same', rating: {m: curM, pw: curP}};
 
-    // ---- upgrade (+1) ----
     const upgrades = [
         {m: Math.min(5, curM + 1), pw: curP},
         {m: curM, pw: Math.min(5, curP + 1)},
         {m: Math.min(5, curM + 1), pw: Math.min(5, curP + 1)}
     ];
     const uniqUp = [...new Set(upgrades.map(o=>`${o.m}/${o.pw}`))].filter(k=>k!==sameKey);
-    const upEach = upgradeProb / uniqUp.length;
+    const upEach = upgradeProb / (uniqUp.length || 1);
     uniqUp.forEach(k => {
         const [m,pw] = k.split('/').map(Number);
         distribution[k] = {prob: upEach, type: 'upgrade', rating: {m, pw}};
     });
 
-    // ---- downgrade (-1) ----
     const downgrades = [
         {m: Math.max(1, curM - 1), pw: curP},
         {m: curM, pw: Math.max(1, curP - 1)}
     ];
     const uniqDown = [...new Set(downgrades.map(o=>`${o.m}/${o.pw}`))].filter(k=>!distribution[k]);
-    const downEach = downgradeProb / uniqDown.length;
+    const downEach = downgradeProb / (uniqDown.length || 1);
     uniqDown.forEach(k => {
         const [m,pw] = k.split('/').map(Number);
         distribution[k] = {prob: downEach, type: 'downgrade', rating: {m, pw}};
     });
 
-    // ---- extreme (±2) ----
     const extremes = [
         {m: Math.min(5, curM + 2), pw: curP},
         {m: Math.max(1, curM - 2), pw: curP}
@@ -480,7 +521,6 @@ function calculateRatingDistribution(r1s, r2s, targetSelection) {
         if (!distribution[k]) distribution[k] = {prob: extremeProb/2, type: 'extreme', rating: e};
     });
 
-    // ---- целевая вероятность ----
     let targetProb = 0, targetKey = '';
     if (targetSelection === 'same') {
         targetProb = sameProb; targetKey = sameKey;
@@ -491,7 +531,6 @@ function calculateRatingDistribution(r1s, r2s, targetSelection) {
         if (distribution[targetKey]) {
             targetProb = distribution[targetKey].prob;
         } else {
-            // нестандартный целевой рейтинг – считаем «по разнице»
             const tgt = parse(targetSelection);
             const dM = Math.abs(tgt.m - curM);
             const dP = Math.abs(tgt.pw - curP);
@@ -499,7 +538,7 @@ function calculateRatingDistribution(r1s, r2s, targetSelection) {
             if (diff === 0) targetProb = sameProb;
             else if (diff === 1) targetProb = upEach;
             else if (diff === 2) targetProb = extremeProb/2;
-            else targetProb = 0; // почти невозможно
+            else targetProb = 0;
             distribution[targetKey] = {prob: targetProb, type: 'target', rating: tgt};
         }
     }
@@ -507,20 +546,19 @@ function calculateRatingDistribution(r1s, r2s, targetSelection) {
     return {distribution, targetProb, targetKey};
 }
 
-/* ---------- Вывод детализации рейтинга ---------- */
 function displayRatingBreakdown(data) {
     const container = document.getElementById('ratingOptions');
     container.innerHTML = '';
     const sorted = Object.entries(data.distribution).sort((a,b)=>b[1].prob - a[1].prob);
     for (const [key, info] of sorted) {
         const isTarget = key === data.targetKey;
-        const typeClass = isTarget ? 'target' : info.type;
+        const typeClass = isTarget ? 'target' : info.type === 'upgrade' ? 'high' : info.type === 'downgrade' ? 'low' : 'medium';
 
         const opt = document.createElement('div');
-        opt.className = `rating-option ${typeClass}`;
+        opt.className = `option ${typeClass}`;
 
         const name = document.createElement('span');
-        name.className = 'rating-name';
+        name.className = 'option-name';
         name.textContent = key;
         if (isTarget) {
             const badge = document.createElement('span');
@@ -531,18 +569,15 @@ function displayRatingBreakdown(data) {
         opt.appendChild(name);
 
         const prob = document.createElement('span');
-        prob.className = 'rating-prob';
+        prob.className = 'option-prob';
         prob.textContent = info.prob.toFixed(1) + '%';
-        if (info.prob >= 30) prob.style.color = '#13ec8d';
-        else if (info.prob >= 15) prob.style.color = '#f6c23e';
-        else prob.style.color = '#ff5151';
         opt.appendChild(prob);
 
         const bar = document.createElement('div');
-        bar.className = 'rating-bar';
+        bar.className = 'option-bar';
         const fill = document.createElement('div');
-        fill.className = 'rating-bar-fill';
-        fill.style.width = `${Math.min(100, info.prob * 2)}%`; // 50% = 100% шкалы
+        fill.className = 'option-bar-fill';
+        fill.style.width = `${Math.min(100, info.prob * 2)}%`;
         bar.appendChild(fill);
 
         const wrapper = document.createElement('div');
