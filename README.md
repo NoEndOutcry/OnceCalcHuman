@@ -139,7 +139,7 @@
 <body>
 <div class="container" role="main">
     <h1>Once Human: <span>Deviant Fusion Calc</span></h1>
-    <p class="intro">Все расчеты калькулятора основываются на статистике и опыте игроков. Было проанализировано около 150 исходов слияний, статистику продолжаю пополнять. Калькулятор работает в тестовом режиме и не гарантирует результат, так-как принципы по которым считает игра - не раскрываются компанией.  </p>
+    <p class="intro">Все расчеты калькулятора основываются на статистике и опыте игроков. Было проанализировано около 150 исходов слияний, статистику продолжаю пополнять. Калькулятор работает в тестовом режиме и не гарантирует результат, так как принципы по которым считает игра - не раскрываются компанией.</p>
     <div class="aria-live" id="live-region" aria-live="assertive"></div>
 
     <div class="section">
@@ -236,7 +236,7 @@
         <input type="number" id="numTraits" min="0" max="4" value="0" aria-label="Количество черт">
         <div class="error-message" id="numTraitsError"></div>
         <div id="traitsContainer"></div>
-        <div class="info-box"><strong>Справка:</strong>Важно: В игре добавление материалов с нужной чертой сильно повышает шанс её наследования (до 10 раз!).Здесь учтён только базовый бонус от количества "чистых" материалов — как приближение.</div>
+        <div class="info-box"><strong>Справка:</strong> Важно: В игре добавление материалов с нужной чертой сильно повышает шанс её наследования (до 10 раз!). Здесь учтён только базовый бонус от количества "чистых" материалов — как приближение.</div>
     </div>
 
     <div class="section">
@@ -280,16 +280,11 @@ let state = {
     numTraits: 0,
     traits: [],
     wantDeviantTrait: "no",
-    deviantMaterials: 1,
-    results: {}
+    deviantMaterials: 1
 };
 
-function setState(partial) {
-    Object.assign(state, partial);
-    calculateFusionRealtime();
-}
-
 const traitsKey = i => `trait-${i}`;
+
 function saveTraitFields() {
     const res = [];
     for (let i = 0; i < state.numTraits; ++i) {
@@ -299,9 +294,9 @@ function saveTraitFields() {
             materials: +document.getElementById(traitsKey(i)+"-materials")?.value || 0
         });
     }
-    // retain for next
     state.traits = res;
 }
+
 function renderTraitFields() {
     let n = state.numTraits;
     let c = document.getElementById('traitsContainer');
@@ -318,10 +313,12 @@ function renderTraitFields() {
         </div></div>`;
     }
 }
+
 function focusFirstError() {
     const err = document.querySelector('input.error, select.error');
     if (err) { err.focus(); err.scrollIntoView({behavior:"smooth",block:"center"}); }
 }
+
 function autoparseRating(val) {
     val = val.replace(/\s+/g,"");
     if (/^[1-5]{2}$/.test(val)) return val[0]+"/"+val[1];
@@ -329,6 +326,7 @@ function autoparseRating(val) {
     if (m) return m[1]+"/"+m[2];
     return val;
 }
+
 function validateForm(show=true) {
     let valid = true;
     function setErr(id,msg) {
@@ -343,23 +341,23 @@ function validateForm(show=true) {
         let errDiv = document.getElementById(id+"Error")||document.getElementById(id+"Err");
         if (errDiv) { errDiv.classList.remove("show"); errDiv.textContent = ""; }
     }
-    // Рейтинг
+    
     let r1 = (document.getElementById("rating1").value=autoparseRating(document.getElementById("rating1").value));
     let r2 = (document.getElementById("rating2").value=autoparseRating(document.getElementById("rating2").value));
     let rTest = /^[1-5]\/[1-5]$/;
     if (!rTest.test(r1)) { setErr("rating1","Формат 1–5/1–5"); valid =false; } else clrErr("rating1");
     if (!rTest.test(r2)) { setErr("rating2","Формат 1–5/1–5"); valid =false; } else clrErr("rating2");
-    // Тип материала
+    
     if (state.sameType==="no") {
         let v = +document.getElementById("typeMaterials").value;
         if (v<0||v>3) { setErr("typeMaterials","0–3"); valid=false; } else clrErr("typeMaterials");
     }
-    // Девиант
+    
     if (state.wantDeviantTrait==="yes") {
         let v = +document.getElementById("deviantMaterials").value;
         if (v<1||v>3) { setErr("deviantMaterials","1–3"); valid=false; } else clrErr("deviantMaterials");
     }
-    // Кол-во черт
+    
     let n = +document.getElementById("numTraits").value;
     if (n<0||n>4) { setErr("numTraits","0–4"); valid=false; } else clrErr("numTraits");
 
@@ -373,17 +371,15 @@ function validateForm(show=true) {
 }
 
 function getRatingDistribution(r1s, r2s, target) {
-    // Эмпирическая модель — учитывает невозможные upgrade/downgrade/extreme
     let parse = s => { let p = s.split('/'); return {m:+p[0], pw:+p[1]}; };
     let r1 = parse(r1s), r2 = parse(r2s);
     let avM = Math.round((r1.m+r2.m)/2), avP = Math.round((r1.pw+r2.pw)/2);
-    let variants = [];
     let dist = {};
     let total = 0;
-    // Без изменений (same)
+    
     dist[`${avM}/${avP}`] = {prob:45, type:'same'};
     total+=45;
-    // Upgrades
+    
     let upgrades = [];
     if (avM<5) upgrades.push(`${avM+1}/${avP}`);
     if (avP<5) upgrades.push(`${avM}/${avP+1}`);
@@ -391,28 +387,29 @@ function getRatingDistribution(r1s, r2s, target) {
     upgrades = [...new Set(upgrades)];
     let uP = upgrades.length?32/upgrades.length:0;
     for (let u of upgrades) {dist[u]={prob:uP,type:'upgrade'};total+=uP;}
-    // Downgrades
+    
     let downs = [];
     if (avM>1) downs.push(`${avM-1}/${avP}`);
     if (avP>1) downs.push(`${avM}/${avP-1}`);
     downs = [...new Set(downs)];
     let dP = downs.length?18/downs.length:0;
     for (let d of downs) {dist[d]={prob:dP,type:'downgrade'};total+=dP;}
-    // Extremes: ±2 в любую сторону если возможно
+    
     let ex = [];
     if (avM<4) ex.push(`${avM+2}/${avP}`);
     if (avP<4) ex.push(`${avM}/${avP+2}`);
     if (avM>2) ex.push(`${avM-2}/${avP}`);
     if (avP>2) ex.push(`${avM}/${avP-2}`);
     ex = [...new Set(ex.filter(k=>!dist[k]))];
-    let eP = ex.length?5/ex.length:0; // ~5% на все extremes суммарно
+    let eP = ex.length?5/ex.length:0;
     for (let e of ex) {dist[e]={prob:eP,type:'extreme'};total+=eP;}
-    // Нормализация к 100
+    
     for (let k in dist) dist[k].prob = +(dist[k].prob/total*100).toFixed(2);
-    // Target
+    
     let tprob = dist[target]?dist[target].prob:0;
     return {distribution:dist, targetKey:target, targetProb:tprob};
 }
+
 function getTypesProb(sameType, typeMaterials) {
     if (sameType==="yes") return 100;
     if (typeMaterials===0) return 50;
@@ -420,20 +417,23 @@ function getTypesProb(sameType, typeMaterials) {
     if (typeMaterials===2) return 75;
     return 80;
 }
+
 function getTraitProb(parents, mats) {
-    // Модель: 2 parents = 100%, 1 parent — linear, clean, true boost в игре выше!
     if (parents===2) return 1;
     if (parents===1) return 0.5+mats*0.1;
     return 0;
 }
+
 function getDeviantProb(mats) {
     return 1-Math.pow(0.75,Math.max(0,Math.min(3,mats)));
 }
 
-function calculateFusionRealtime(ev) {
-    if(!validateForm(false)) return;
+function calculateFusion() {
+    if(!validateForm(true)) {
+        focusFirstError();
+        return;
+    }
 
-    // Read all текущие значения
     let rating1 = autoparseRating(document.getElementById("rating1").value);
     let rating2 = autoparseRating(document.getElementById("rating2").value);
     let targetRating = document.getElementById("targetRating").value;
@@ -445,13 +445,10 @@ function calculateFusionRealtime(ev) {
 
     saveTraitFields();
 
-    // Тип
     let typeProb = getTypesProb(sameType, typeMaterials);
-
-    // Рейтинг
     let distObj = getRatingDistribution(rating1, rating2, targetRating);
     let ratingProb = distObj.targetProb;
-    // Черты
+    
     let traitFieldList = [];
     for(let i=0;i<numTraits;i++){
         let t = state.traits[i]||{name:`Черта ${i+1}`,parents:0,materials:0};
@@ -459,11 +456,10 @@ function calculateFusionRealtime(ev) {
         traitFieldList.push({name:t.name||`Черта ${i+1}`, parents:+t.parents, materials:+t.materials, prob});
     }
     let traitsProb = traitFieldList.reduce((a,t)=>a*t.prob,1);
-    // Девиант
+    
     let deviantProb = wantDeviantTrait==="yes"?getDeviantProb(deviantMaterials):1;
-    // Итоговая вероятность
     let total = 1.0*typeProb/100*ratingProb/100*(numTraits?traitsProb:1)*(wantDeviantTrait==="yes"?deviantProb:1);
-    // Рендер результатов
+    
     let html = "";
     html += `<div class="result-item"><span class="result-label">Вероятность типа</span><span class="result-value">${typeProb.toFixed(1)}%</span></div>`;
     html += `<div class="rating-breakdown"><h4>📊 Распределение вероятностей рейтинга</h4>`;
@@ -479,18 +475,23 @@ function calculateFusionRealtime(ev) {
         </div>`;
     }
     html += `</div>`;
-    html += (numTraits?`<div class="traits-breakdown">
-        <h4>✨ Вероятности наследования черт</h4>
-        <div id="traitsOptions"></div>
-        <div class="trait-combinations" id="traitCombinations">
-            <div class="trait-combinations-title">Возможные комбинации черт:</div>
-            <div id="combinationsList"></div>
-        </div>
-    </div>`:"");
+    
+    if(numTraits>0){
+        html += `<div class="traits-breakdown">
+            <h4>✨ Вероятности наследования черт</h4>
+            <div id="traitsOptions"></div>
+            <div class="trait-combinations" id="traitCombinations">
+                <div class="trait-combinations-title">Возможные комбинации черт:</div>
+                <div id="combinationsList"></div>
+            </div>
+        </div>`;
+    }
+    
     if(wantDeviantTrait==="yes"){
         html += `<div class="result-item"><span class="result-label">Девиантная черта</span>`;
         html += `<span class="result-value">${(deviantProb*100).toFixed(1)}%</span></div>`;
     }
+    
     html += `<div class="final-result"><h3>Финальный шанс успеха</h3>
         <div class="big-number" style="${total>=.5?'color:#13ec8d;':total>=.2?'color:#f6c23e;':'color:var(--error);'}">${(total*100).toFixed(2)}%</div>
         <div class="attempts">Ожидаемо попыток: <strong>${total>0?(100/(total*100)).toFixed(1):"∞"}</strong></div></div>
@@ -499,16 +500,15 @@ function calculateFusionRealtime(ev) {
         <br>• <span style="color:#f6c23e;">20–49%</span> — Средний (2–5 попыток)
         <br>• <span style="color:#ff5151">&lt;20%</span> — Низкий (5+ попыток)</div>
     `;
+    
     document.getElementById("results").innerHTML = html;
     document.getElementById("results").classList.add("show");
-    // Подключить детали по чертам и комбинациям
+    
     if (numTraits>0) renderTraitsDetailed(traitFieldList);
-    // live-region для accessibility
     document.getElementById("live-region").textContent = `Вероятность цели: ${(total*100).toFixed(2)}%`;
 }
 
 function renderTraitsDetailed(traits) {
-    // Подробная детализация вероятностей черт + комбинации
     let c = document.getElementById("traitsOptions");
     if (!c) return;
     c.innerHTML = "";
@@ -522,14 +522,13 @@ function renderTraitsDetailed(traits) {
             <div class="trait-bar"><div class="trait-bar-fill" style="width:${pct}%"></div></div>
         </div>`;
     }
-    // Комбинации черт
+    
     let combDiv = document.getElementById("combinationsList");
     if (!combDiv) return;
     let N = traits.length;
-    // Все черты сохр.
     let probAll = traits.reduce((a,t)=>a*t.prob,1);
     combDiv.innerHTML = `<div class="combo-item"><span class="combo-traits">Все ${N} черт</span><span class="combo-prob">${(probAll*100).toFixed(1)}%</span></div>`;
-    // Без одной
+    
     if (N>1) for(let i=0;i<N;++i) {
         let p=traits.reduce((a,t,j)=>a*(i==j?(1-t.prob):t.prob),1);
         if (p>0.001) combDiv.innerHTML += `<div class="combo-item"><span class="combo-traits">${traits.filter((_,j)=>i!=j).map(tt=>tt.name).join(", ")}</span><span class="combo-prob">${(p*100).toFixed(1)}%</span></div>`;
@@ -538,46 +537,44 @@ function renderTraitsDetailed(traits) {
     if (none>0.001) combDiv.innerHTML += `<div class="combo-item"><span class="combo-traits">Без черт</span><span class="combo-prob">${(none*100).toFixed(1)}%</span></div>`;
 }
 
-// ========== СЛУШАТЕЛИ ДЛЯ REALTIME ===============
-document.querySelectorAll("input,select").forEach(e=>e.addEventListener("input",()=>{if(e.id.startsWith("trait-")) saveTraitFields(); setTimeout(calculateFusionRealtime,1);}));
-document.getElementById("calcBtn").addEventListener("click",()=>{if(validateForm(true)) calculateFusionRealtime();focusFirstError();});
+// ТОЛЬКО обработка кнопки "Посчитать"
+document.getElementById("calcBtn").addEventListener("click", calculateFusion);
+
+// Управление показом/скрытием дополнительных полей
+document.getElementById('sameType').addEventListener('change',function(){
+    state.sameType = this.value;
+    document.getElementById('materialsGroup').style.display=(this.value==='no')?'block':'none';
+});
+
+document.getElementById('wantDeviantTrait').addEventListener('change',function(){
+    state.wantDeviantTrait = this.value;
+    document.getElementById('deviantMaterialsGroup').style.display=(this.value==='yes')?'block':'none';
+});
 
 document.getElementById("numTraits").addEventListener("input", function(){
-    saveTraitFields(); // сохраним! (до смены)
+    saveTraitFields();
     let n = +(this.value)||0;
     let prev = state.traits || [];
-    renderTraitFields();
     state.numTraits = n;
-    // восстановить значения, если уменьшают numTraits (3→2)
+    
     let next = [];
     for(let i=0;i<n;++i) next[i]=prev[i]||{name:"", parents:1, materials:3};
     state.traits = next;
-    saveTraitFields();
-    setTimeout(()=>calculateFusionRealtime(),1);
+    
+    renderTraitFields();
 });
-// Trigger fields first render
-renderTraitFields();
 
-// Показывать/скрывать материалы по типу родителей и девиантному выбору
-document.getElementById('sameType').addEventListener('change',function(){document.getElementById('materialsGroup').style.display=(this.value==='no')?'block':'none'; setState({sameType:this.value});});
-document.getElementById('wantDeviantTrait').addEventListener('change',function(){document.getElementById('deviantMaterialsGroup').style.display=(this.value==='yes')?'block':'none'; setState({wantDeviantTrait:this.value});});
-
+// Tooltip keyboard support
 document.querySelectorAll('.info-icon').forEach(el=>{
     el.addEventListener('keydown',function(e){
-        if(e.key==="Enter"||e.key===" "){el.classList.toggle('active');}
+        if(e.key==="Enter"||e.key===" "){e.preventDefault();el.classList.toggle('active');}
         if(e.key==="Escape"){el.classList.remove('active');}
     });
     el.addEventListener('blur',function(){el.classList.remove('active');});
 });
 
-// Live: фокус на первое ошибочное поле
-document.querySelector('body').addEventListener("input", function() {
-    let err = document.querySelector('input.error,select.error');
-    if(err) setTimeout(()=>{err.focus();},80);
-});
-
-// --- Live realtime calc ---
-calculateFusionRealtime();
+// Инициализация полей черт
+renderTraitFields();
 </script>
 </body>
 </html>
