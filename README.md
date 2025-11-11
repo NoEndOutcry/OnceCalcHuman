@@ -327,6 +327,33 @@ function autoparseRating(val) {
     return val;
 }
 
+function validateRatingField(inputId, errorId) {
+    let el = document.getElementById(inputId);
+    let errDiv = document.getElementById(errorId);
+    let val = el.value.trim();
+    
+    // Автокоррекция
+    let corrected = autoparseRating(val);
+    if (corrected !== val) {
+        el.value = corrected;
+        val = corrected;
+    }
+    
+    // Валидация
+    let rTest = /^[1-5]\/[1-5]$/;
+    if (!rTest.test(val)) {
+        el.classList.add("error");
+        errDiv.classList.add("show");
+        errDiv.textContent = "Формат 1–5/1–5 (например: 5/4)";
+        return false;
+    } else {
+        el.classList.remove("error");
+        errDiv.classList.remove("show");
+        errDiv.textContent = "";
+        return true;
+    }
+}
+
 function validateForm(show=true) {
     let valid = true;
     function setErr(id,msg) {
@@ -342,24 +369,22 @@ function validateForm(show=true) {
         if (errDiv) { errDiv.classList.remove("show"); errDiv.textContent = ""; }
     }
     
-    let r1 = (document.getElementById("rating1").value=autoparseRating(document.getElementById("rating1").value));
-    let r2 = (document.getElementById("rating2").value=autoparseRating(document.getElementById("rating2").value));
-    let rTest = /^[1-5]\/[1-5]$/;
-    if (!rTest.test(r1)) { setErr("rating1","Формат 1–5/1–5"); valid =false; } else clrErr("rating1");
-    if (!rTest.test(r2)) { setErr("rating2","Формат 1–5/1–5"); valid =false; } else clrErr("rating2");
+    // Рейтинги (с автокоррекцией)
+    valid = validateRatingField("rating1", "rating1Error") && valid;
+    valid = validateRatingField("rating2", "rating2Error") && valid;
     
     if (state.sameType==="no") {
         let v = +document.getElementById("typeMaterials").value;
-        if (v<0||v>3) { setErr("typeMaterials","0–3"); valid=false; } else clrErr("typeMaterials");
+        if (v<0||v>3) { setErr("typeMaterials","Значение от 0 до 3"); valid=false; } else clrErr("typeMaterials");
     }
     
     if (state.wantDeviantTrait==="yes") {
         let v = +document.getElementById("deviantMaterials").value;
-        if (v<1||v>3) { setErr("deviantMaterials","1–3"); valid=false; } else clrErr("deviantMaterials");
+        if (v<1||v>3) { setErr("deviantMaterials","Значение от 1 до 3"); valid=false; } else clrErr("deviantMaterials");
     }
     
     let n = +document.getElementById("numTraits").value;
-    if (n<0||n>4) { setErr("numTraits","0–4"); valid=false; } else clrErr("numTraits");
+    if (n<0||n>4) { setErr("numTraits","Значение от 0 до 4"); valid=false; } else clrErr("numTraits");
 
     for (let i = 0; i < n; ++i) {
         let pval = +document.getElementById(traitsKey(i)+"-parents").value;
@@ -434,8 +459,8 @@ function calculateFusion() {
         return;
     }
 
-    let rating1 = autoparseRating(document.getElementById("rating1").value);
-    let rating2 = autoparseRating(document.getElementById("rating2").value);
+    let rating1 = document.getElementById("rating1").value.trim();
+    let rating2 = document.getElementById("rating2").value.trim();
     let targetRating = document.getElementById("targetRating").value;
     let sameType = document.getElementById("sameType").value;
     let typeMaterials = +document.getElementById("typeMaterials")?.value || 0;
@@ -506,6 +531,8 @@ function calculateFusion() {
     
     if (numTraits>0) renderTraitsDetailed(traitFieldList);
     document.getElementById("live-region").textContent = `Вероятность цели: ${(total*100).toFixed(2)}%`;
+    
+    document.getElementById("results").scrollIntoView({behavior:"smooth",block:"nearest"});
 }
 
 function renderTraitsDetailed(traits) {
@@ -537,7 +564,16 @@ function renderTraitsDetailed(traits) {
     if (none>0.001) combDiv.innerHTML += `<div class="combo-item"><span class="combo-traits">Без черт</span><span class="combo-prob">${(none*100).toFixed(1)}%</span></div>`;
 }
 
-// ТОЛЬКО обработка кнопки "Посчитать"
+// Live-валидация для полей рейтинга
+document.getElementById("rating1").addEventListener("input", function() {
+    validateRatingField("rating1", "rating1Error");
+});
+
+document.getElementById("rating2").addEventListener("input", function() {
+    validateRatingField("rating2", "rating2Error");
+});
+
+// Кнопка расчёта
 document.getElementById("calcBtn").addEventListener("click", calculateFusion);
 
 // Управление показом/скрытием дополнительных полей
