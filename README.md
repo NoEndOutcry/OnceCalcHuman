@@ -139,7 +139,7 @@
 <body>
 <div class="container" role="main">
     <h1>Once Human: <span>Deviant Fusion Calc</span></h1>
-    <p class="intro">Современный калькулятор — на основе синергии материалов, рейтинга и черт. Быстрый расчёт шанса успеха в Once Human!</p>
+    <p class="intro">Все расчеты калькулятора основываются на статистике и опыте игроков. Было проанализировано около 150 исходов слияний, статистику продолжаю пополнять. Калькулятор работает в тестовом режиме и не гарантирует результат, так-как принципы по которым считает игра - не раскрываются компанией.  </p>
     <div class="aria-live" id="live-region" aria-live="assertive"></div>
 
     <div class="section">
@@ -236,7 +236,7 @@
         <input type="number" id="numTraits" min="0" max="4" value="0" aria-label="Количество черт">
         <div class="error-message" id="numTraitsError"></div>
         <div id="traitsContainer"></div>
-        <div class="info-box"><strong>Справка:</strong> Учтите: boost, если материал с чертой, реализуется только в игре! Здесь — только "clean" boost как приближение.</div>
+        <div class="info-box"><strong>Справка:</strong>Важно: В игре добавление материалов с нужной чертой сильно повышает шанс её наследования (до 10 раз!).Здесь учтён только базовый бонус от количества "чистых" материалов — как приближение.</div>
     </div>
 
     <div class="section">
