@@ -348,7 +348,7 @@
 
 <script>
 // ⚠️ ЗАМЕНИТЕ ЭТО НА ВАШ GOOGLE APPS SCRIPT URL
-const GOOGLE_APPS_SCRIPT_URL = "[https://script.google.com/macros/d/YOUR_DEPLOYMENT_ID/userweb](https://script.google.com/macros/s/AKfycbyv-jHHBTSQoQE1DCk5Gd6_vYpIHKx0SugghcEXR643825ijyWfuw999WmBWaRpR639/exec)";
+const GOOGLE_APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxwWTSzZlQAYXNgHFIHacROWqneOvoJt4Ph9cChxqWwMnP_b4wtF2ggBVo0oNWKzqTO/exec";
 
 let state = {
     rating1: "5/4",
