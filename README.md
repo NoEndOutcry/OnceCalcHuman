@@ -3,7 +3,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Once Human — Калькулятор слияния девиантов</title>
-    <meta name="description" content="Точный калькулятор слияния девиантов для Once Human: вероятности типа, рейтинга, наследования черт, девиантных морфов.">
+    <meta name="description" content="Точный калькулятор слияния девиантов для Once Human с интеграцией Google Sheets для сбора статистики.">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -16,11 +16,13 @@
             --text: #f6f7fa;
             --border: #444a8a44;
             --error: #ff5151;
+            --success: #13ec8d;
         }
         * { box-sizing: border-box; }
         body {
             margin: 0; background: var(--bg); color: var(--text);
             font-family: 'Inter', Arial, sans-serif; min-height: 100vh;
+            padding-bottom: 50px;
         }
         .container {
             max-width: 700px; margin: 32px auto 0 auto; background: var(--card-bg);
@@ -52,14 +54,30 @@
         .legend-item {color: #a7ecfb; font-size: 0.97em;}
         @media (max-width:650px){ .tooltip {left:auto;right:0;transform:none;width:260px;} }
         label { font-weight: 600; color: var(--accent); font-size: .97rem; margin-bottom:0.22em; display: block;}
-        select, input[type="number"], input[type="text"] {
+        select, input[type="number"], input[type="text"], textarea {
             outline: none;border:1.5px solid #3843b55c;background: #242646fb; color: #f6f7fa;
             font-size: 1rem; border-radius: 6px; padding:9px 13px;margin-bottom:0.8em; width: 100%;
-            transition:border 0.2s, box-shadow 0.2s;}
-        select:focus, input:focus {border:1.5px solid var(--c5);box-shadow:0 0 8px #3de9c390;}
+            transition:border 0.2s, box-shadow 0.2s; font-family: 'Inter', Arial, sans-serif;}
+        select:focus, input:focus, textarea:focus {border:1.5px solid var(--c5);box-shadow:0 0 8px #3de9c390;}
         input.error, select.error {border-color:var(--error);box-shadow:0 0 8px #ff515170;}
         .error-message {color:var(--error);font-size:0.89em;margin:-0.2em 0 0.7em 0;display:none;}
         .error-message.show {display:block;}
+        .success-message {color:var(--success);font-size:0.89em;margin:0.5em 0;display:none;
+            padding:10px;background:#13ec8d22;border-radius:6px;border-left:3px solid var(--success);}
+        .success-message.show {display:block;}
+        .loading-spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #3de9c3;
+            border-top: 2px solid transparent;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-right: 8px;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
         .inline-group {display: flex; gap: 18px;}
         @media (max-width:650px){ .inline-group,.traits-group {flex-direction:column;}
             .container{padding:10vw 3vw;} }
@@ -68,13 +86,19 @@
             border:1px solid #3843b544;}
         .trait-config label {font-size:.91em;color:#b7cbf7;font-weight:400;}
         .trait-config input[type="text"] {font-weight:600;color:var(--accent);}
-        .calculate-btn {
+        .calculate-btn, .submit-result-btn {
             width:100%;padding:.98em;font-size:1.18rem;font-weight:700;border-radius:9px;
             border:none;background:linear-gradient(120deg,#198cff 40%,#3de9c3 100%);
             color:white;box-shadow:0 2px 12px #198cff22;cursor:pointer; margin-top:7px;}
-        .calculate-btn:hover {transform:translateY(-2px) scale(1.03);
+        .calculate-btn:hover, .submit-result-btn:hover {transform:translateY(-2px) scale(1.03);
             box-shadow:0 8px 18px #21dce599;background:linear-gradient(120deg,#21dce5 0%,#3de9c3 100%);}
-        .calculate-btn:disabled {opacity:0.5;cursor:not-allowed;}
+        .calculate-btn:disabled, .submit-result-btn:disabled {opacity:0.5;cursor:not-allowed;transform:none;}
+        .submit-result-btn {
+            background:linear-gradient(120deg,#ffc94a 40%,#ffdd88 100%);
+            box-shadow:0 2px 12px #ffc94a22;}
+        .submit-result-btn:hover {
+            background:linear-gradient(120deg,#ffdd88 0%,#ffc94a 100%);
+            box-shadow:0 8px 18px #ffc94a99;}
         .results {margin-top:19px;background:linear-gradient(120deg,#2a355fdd 0%,#3641a9dc 100%);
             border-radius:16px;border:1.5px solid var(--border);box-shadow:0 2px 8px #1e213a44;display:none;
             padding:1.45em 1.3em;}
@@ -133,13 +157,38 @@
         .info-box {background:#232646e0;border-left:3px solid var(--accent);
             padding:10px 17px;border-radius:7px;margin-top:13px;font-size:.99em;color:#fbf6e9;}
         .info-box strong {color:var(--accent);}
+        .warning-box {background:#ffc94a22;border-left:3px solid var(--accent);
+            padding:10px 17px;border-radius:7px;margin-bottom:13px;font-size:.95em;color:#fbf6e9;}
         .aria-live {position:absolute;left:-9999px;top:auto;width:1px;height:1px;overflow:hidden;}
+        .feedback-form {
+            background: rgba(36,38,70,0.98);
+            border-radius: 14px;
+            padding: 1.5em 1.2em;
+            margin-top: 22px;
+            border: 2px solid #ffc94a66;
+        }
+        .feedback-form h3 {
+            color: var(--accent);
+            font-size: 1.2rem;
+            margin-bottom: 0.8em;
+            text-align: center;
+        }
+        textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
     </style>
 </head>
 <body>
 <div class="container" role="main">
     <h1>Once Human: <span>Deviant Fusion Calc</span></h1>
     <p class="intro">Все расчеты калькулятора основываются на статистике и опыте игроков. Было проанализировано около 150 исходов слияний, статистику продолжаю пополнять. Калькулятор работает в тестовом режиме и не гарантирует результат, так как принципы по которым считает игра - не раскрываются компанией.</p>
+    
+    <div class="warning-box">
+        <strong>📊 Помогите улучшить калькулятор!</strong><br>
+        После слияния в игре заполните форму ниже с реальным результатом. Ваши данные помогут сделать расчёты точнее для всех игроков!
+    </div>
+    
     <div class="aria-live" id="live-region" aria-live="assertive"></div>
 
     <div class="section">
@@ -268,9 +317,39 @@
 
     <button class="calculate-btn" id="calcBtn" aria-label="Посчитать">🧮 Посчитать</button>
     <div class="results" id="results" role="region" aria-label="Результаты"></div>
+
+    <!-- ФОРМА ДЛЯ ОТПРАВКИ РЕАЛЬНОГО РЕЗУЛЬТАТА -->
+    <div class="feedback-form" id="feedbackForm" style="display:none;">
+        <h3>📤 Отправить реальный результат слияния</h3>
+        <p style="color:#c8c9ee;font-size:0.95em;text-align:center;margin-bottom:1.2em;">
+            Помогите улучшить точность калькулятора — поделитесь результатом вашего слияния!
+        </p>
+        
+        <label for="actualResultRating">Полученный рейтинг результата (например, 5/5)</label>
+        <input type="text" id="actualResultRating" placeholder="5/5" aria-label="Фактический рейтинг результата">
+        <div class="error-message" id="actualResultRatingError"></div>
+        
+        <label for="actualResultType">Совпал ли тип с ожидаемым?</label>
+        <select id="actualResultType">
+            <option value="yes">Да, тип совпал</option>
+            <option value="no">Нет, тип не совпал</option>
+        </select>
+        
+        <label for="actualResultTraits">Полученные черты (через запятую или оставьте пустым)</label>
+        <textarea id="actualResultTraits" placeholder="Например: Cheer Up 3, Strong 2" rows="2"></textarea>
+        
+        <label for="additionalNotes">Дополнительные заметки (необязательно)</label>
+        <textarea id="additionalNotes" placeholder="Например: использовал материалы с чертами, версия 1.2" rows="3"></textarea>
+        
+        <button class="submit-result-btn" id="submitResultBtn" aria-label="Отправить результат">📊 Отправить данные</button>
+        <div class="success-message" id="submitSuccess">✅ Спасибо! Ваши данные отправлены и помогут улучшить калькулятор.</div>
+    </div>
 </div>
 
 <script>
+// ⚠️ ЗАМЕНИТЕ ЭТО НА ВАШ GOOGLE APPS SCRIPT URL
+const GOOGLE_APPS_SCRIPT_URL = "[https://script.google.com/macros/d/YOUR_DEPLOYMENT_ID/userweb](https://script.google.com/macros/s/AKfycbyv-jHHBTSQoQE1DCk5Gd6_vYpIHKx0SugghcEXR643825ijyWfuw999WmBWaRpR639/exec)";
+
 let state = {
     rating1: "5/4",
     rating2: "4/5",
@@ -320,24 +399,15 @@ function focusFirstError() {
 }
 
 function autoparseRating(val) {
-    // Удаляем все пробелы
     val = val.replace(/\s+/g,"");
-    
-    // Варианты: 54, 5.4, 5,4, 5-4, 5:4, 5 4 → 5/4
-    // Сначала заменяем точку, запятую на слэш
     val = val.replace(/[.,]/g, '/');
-    
-    // Если две цифры подряд без разделителя (54 → 5/4)
     if (/^[1-5]{2}$/.test(val)) {
         return val[0]+"/"+val[1];
     }
-    
-    // Если формат с дефисом, двоеточием или уже слэшем
     let m = val.match(/^([1-5])[\/:\-]+([1-5])$/);
     if (m) {
         return m[1]+"/"+m[2];
     }
-    
     return val;
 }
 
@@ -346,14 +416,12 @@ function validateRatingField(inputId, errorId) {
     let errDiv = document.getElementById(errorId);
     let val = el.value.trim();
     
-    // Автокоррекция
     let corrected = autoparseRating(val);
     if (corrected !== val) {
         el.value = corrected;
         val = corrected;
     }
     
-    // Валидация
     let rTest = /^[1-5]\/[1-5]$/;
     if (!rTest.test(val)) {
         el.classList.add("error");
@@ -383,7 +451,6 @@ function validateForm(show=true) {
         if (errDiv) { errDiv.classList.remove("show"); errDiv.textContent = ""; }
     }
     
-    // Рейтинги (с автокоррекцией)
     valid = validateRatingField("rating1", "rating1Error") && valid;
     valid = validateRatingField("rating2", "rating2Error") && valid;
     
@@ -502,7 +569,7 @@ function calculateFusion() {
     let html = "";
     html += `<div class="result-item"><span class="result-label">Вероятность типа</span><span class="result-value">${typeProb.toFixed(1)}%</span></div>`;
     html += `<div class="rating-breakdown"><h4>📊 Распределение вероятностей рейтинга</h4>`;
-    html += `<div style="font-size:0.9em;color:#c8c9ee;margin-bottom:12px;text-align:center;">Родители: ${rating1} + ${rating2} → средний ~${Math.round((parseInt(rating1.split('/')[0])+parseInt(rating2.split('/')[0]))/2)}/${Math.round((parseInt(rating1.split('/')[1])+parseInt(rating2.split('/')[1]))/2)}</div>`;
+    html += `<div style="font-size:0.9em;color:#c8c9ee;margin-bottom:12px;text-align:center;">Родители: ${rating1} + ${rating2}</div>`;
     let keys = Object.keys(distObj.distribution).sort((a,b)=>distObj.distribution[b].prob-distObj.distribution[a].prob);
     for(let k of keys){
         let info = distObj.distribution[k];
@@ -547,7 +614,8 @@ function calculateFusion() {
     if (numTraits>0) renderTraitsDetailed(traitFieldList);
     document.getElementById("live-region").textContent = `Вероятность цели: ${(total*100).toFixed(2)}%`;
     
-    document.getElementById("results").scrollIntoView({behavior:"smooth",block:"nearest"});
+    document.getElementById("feedbackForm").style.display = "block";
+    document.getElementById("feedbackForm").scrollIntoView({behavior:"smooth",block:"nearest"});
 }
 
 function renderTraitsDetailed(traits) {
@@ -579,7 +647,62 @@ function renderTraitsDetailed(traits) {
     if (none>0.001) combDiv.innerHTML += `<div class="combo-item"><span class="combo-traits">Без черт</span><span class="combo-prob">${(none*100).toFixed(1)}%</span></div>`;
 }
 
-// Live-валидация для полей рейтинга
+// ФУНКЦИЯ ОТПРАВКИ РЕЗУЛЬТАТА НА GOOGLE SHEETS
+function submitFusionResult() {
+    if (!validateRatingField("actualResultRating", "actualResultRatingError")) {
+        return;
+    }
+    
+    let btn = document.getElementById("submitResultBtn");
+    btn.disabled = true;
+    btn.innerHTML = '<span class="loading-spinner"></span>Отправка...';
+    
+    let fusionData = {
+        input: {
+            rating1: document.getElementById("rating1").value.trim(),
+            rating2: document.getElementById("rating2").value.trim(),
+            sameType: document.getElementById("sameType").value,
+            typeMaterials: +document.getElementById("typeMaterials")?.value || 0,
+            numTraits: +document.getElementById("numTraits").value || 0,
+            traits: state.traits,
+            wantDeviantTrait: document.getElementById("wantDeviantTrait").value,
+            deviantMaterials: +document.getElementById("deviantMaterials")?.value || 0
+        },
+        result: {
+            actualRating: document.getElementById("actualResultRating").value.trim(),
+            typeMatched: document.getElementById("actualResultType").value,
+            actualTraits: document.getElementById("actualResultTraits").value.trim(),
+            notes: document.getElementById("additionalNotes").value.trim()
+        }
+    };
+    
+    fetch(GOOGLE_APPS_SCRIPT_URL, {
+        method: 'POST',
+        body: JSON.stringify(fusionData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            document.getElementById("submitSuccess").classList.add("show");
+            document.getElementById("actualResultRating").value = "";
+            document.getElementById("actualResultTraits").value = "";
+            document.getElementById("additionalNotes").value = "";
+            
+            setTimeout(() => {
+                document.getElementById("submitSuccess").classList.remove("show");
+                btn.disabled = false;
+                btn.innerHTML = "📊 Отправить данные";
+            }, 3000);
+        }
+    })
+    .catch(error => {
+        console.error('Ошибка отправки:', error);
+        alert('Ошибка отправки данных. Проверьте, что Google Apps Script URL указан правильно.');
+        btn.disabled = false;
+        btn.innerHTML = "📊 Отправить данные";
+    });
+}
+
 document.getElementById("rating1").addEventListener("input", function() {
     validateRatingField("rating1", "rating1Error");
 });
@@ -588,10 +711,13 @@ document.getElementById("rating2").addEventListener("input", function() {
     validateRatingField("rating2", "rating2Error");
 });
 
-// Кнопка расчёта
-document.getElementById("calcBtn").addEventListener("click", calculateFusion);
+document.getElementById("actualResultRating").addEventListener("input", function() {
+    validateRatingField("actualResultRating", "actualResultRatingError");
+});
 
-// Управление показом/скрытием дополнительных полей
+document.getElementById("calcBtn").addEventListener("click", calculateFusion);
+document.getElementById("submitResultBtn").addEventListener("click", submitFusionResult);
+
 document.getElementById('sameType').addEventListener('change',function(){
     state.sameType = this.value;
     document.getElementById('materialsGroup').style.display=(this.value==='no')?'block':'none';
@@ -615,7 +741,6 @@ document.getElementById("numTraits").addEventListener("input", function(){
     renderTraitFields();
 });
 
-// Tooltip keyboard support
 document.querySelectorAll('.info-icon').forEach(el=>{
     el.addEventListener('keydown',function(e){
         if(e.key==="Enter"||e.key===" "){e.preventDefault();el.classList.toggle('active');}
@@ -624,7 +749,6 @@ document.querySelectorAll('.info-icon').forEach(el=>{
     el.addEventListener('blur',function(){el.classList.remove('active');});
 });
 
-// Инициализация полей черт
 renderTraitFields();
 </script>
 </body>
