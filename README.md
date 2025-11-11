@@ -3,7 +3,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Once Human — Калькулятор слияния девиантов</title>
-    <meta name="description" content="Точный калькулятор слияния девиантов для Once Human: вероятности типа, рейтинга, наследования черт, девиантных морфов. UX и механика близки к игре.">
+    <meta name="description" content="Точный калькулятор слияния девиантов для Once Human: вероятности типа, рейтинга, наследования черт, девиантных морфов.">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -320,10 +320,24 @@ function focusFirstError() {
 }
 
 function autoparseRating(val) {
+    // Удаляем все пробелы
     val = val.replace(/\s+/g,"");
-    if (/^[1-5]{2}$/.test(val)) return val[0]+"/"+val[1];
-    let m = val.match(/^([1-5])[\/:\-\s]+([1-5])$/);
-    if (m) return m[1]+"/"+m[2];
+    
+    // Варианты: 54, 5.4, 5,4, 5-4, 5:4, 5 4 → 5/4
+    // Сначала заменяем точку, запятую на слэш
+    val = val.replace(/[.,]/g, '/');
+    
+    // Если две цифры подряд без разделителя (54 → 5/4)
+    if (/^[1-5]{2}$/.test(val)) {
+        return val[0]+"/"+val[1];
+    }
+    
+    // Если формат с дефисом, двоеточием или уже слэшем
+    let m = val.match(/^([1-5])[\/:\-]+([1-5])$/);
+    if (m) {
+        return m[1]+"/"+m[2];
+    }
+    
     return val;
 }
 
@@ -488,6 +502,7 @@ function calculateFusion() {
     let html = "";
     html += `<div class="result-item"><span class="result-label">Вероятность типа</span><span class="result-value">${typeProb.toFixed(1)}%</span></div>`;
     html += `<div class="rating-breakdown"><h4>📊 Распределение вероятностей рейтинга</h4>`;
+    html += `<div style="font-size:0.9em;color:#c8c9ee;margin-bottom:12px;text-align:center;">Родители: ${rating1} + ${rating2} → средний ~${Math.round((parseInt(rating1.split('/')[0])+parseInt(rating2.split('/')[0]))/2)}/${Math.round((parseInt(rating1.split('/')[1])+parseInt(rating2.split('/')[1]))/2)}</div>`;
     let keys = Object.keys(distObj.distribution).sort((a,b)=>distObj.distribution[b].prob-distObj.distribution[a].prob);
     for(let k of keys){
         let info = distObj.distribution[k];
