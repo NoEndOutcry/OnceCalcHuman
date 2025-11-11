@@ -1,4 +1,3 @@
-<!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
@@ -142,12 +141,13 @@
     <h1>Once Human: <span>Deviant Fusion Calc</span></h1>
     <p class="intro">Современный калькулятор — на основе синергии материалов, рейтинга и черт. Быстрый расчёт шанса успеха в Once Human!</p>
     <div class="aria-live" id="live-region" aria-live="assertive"></div>
+
     <div class="section">
         <div class="section-title">Тип девианта
             <div class="info-icon" tabindex="0" aria-label="Справка по типу девианта">
                 i
                 <div class="tooltip" role="tooltip">
-                    <h4>Методика расчёта типа</h4>
+                    <h4>📌 Методика расчёта типа</h4>
                     <div class="formula">P(тип) = базовый_шанс + модификатор</div>
                     <div>Вероятность совпадения типа слияния зависит от родителей и материалов.</div>
                     <div class="legend">
@@ -171,12 +171,13 @@
             <div class="error-message" id="typeMaterialsError"></div>
         </div>
     </div>
+
     <div class="section">
         <div class="section-title">Рейтинг
             <div class="info-icon" tabindex="0" aria-label="Справка по рейтингу">
                 i
                 <div class="tooltip" role="tooltip">
-                    <h4>Методика расчёта рейтинга</h4>
+                    <h4>📊 Методика расчёта рейтинга</h4>
                     <div class="formula">P(рейтинг) ≈ распределение_изменений</div>
                     <div>Распределение основано на данных в игре (~150+ слияний, player reports).</div>
                     <div class="legend">
@@ -185,7 +186,7 @@
                         <div class="legend-item">• Апгрейд (+1): ~32%</div>
                         <div class="legend-item">• Даунгрейд (-1): ~18%</div>
                         <div class="legend-item">• Экстремальные (±2): ~5%</div>
-                        <div class="legend-item" style="color:#ff5151;">Невозможные исходы исключены!</div>
+                        <div class="legend-item" style="color:#ff5151;">⚠️ Невозможные исходы исключены!</div>
                     </div>
                 </div>
             </div>
@@ -212,12 +213,13 @@
             <option value="same">Без изменений</option>
         </select>
     </div>
+
     <div class="section">
         <div class="section-title">Наследование черт
             <div class="info-icon" tabindex="0" aria-label="Справка по чертам">
                 i
                 <div class="tooltip" role="tooltip">
-                    <h4>Методика расчёта черт</h4>
+                    <h4>✨ Методика расчёта черт</h4>
                     <div class="formula">P(черта) = базовый + (m × 0.1) (clean). В игре: material с чертой = boost x10!</div>
                     <div>Данная модель — аппроксимация статистики игроков (она ближе к fusion preview в Once Human, но не учтён true mat-boost).</div>
                     <div class="legend">
@@ -236,12 +238,13 @@
         <div id="traitsContainer"></div>
         <div class="info-box"><strong>Справка:</strong> Учтите: boost, если материал с чертой, реализуется только в игре! Здесь — только "clean" boost как приближение.</div>
     </div>
+
     <div class="section">
         <div class="section-title">Девиантные черты (морфы)
             <div class="info-icon" tabindex="0" aria-label="Справка по девиантным чертам">
                 i
                 <div class="tooltip" role="tooltip">
-                    <h4>Методика морфов</h4>
+                    <h4>🦎 Методика морфов</h4>
                     <div class="formula">P(morph) = 1 - (0.75)^n, где n = кол-во материалов (1–3)</div>
                     <div class="legend">
                         <div class="legend-item">• 1 мат: 25%</div>
@@ -262,9 +265,11 @@
             <div class="error-message" id="deviantMaterialsError"></div>
         </div>
     </div>
-    <button class="calculate-btn" id="calcBtn" aria-label="Посчитать">Посчитать</button>
+
+    <button class="calculate-btn" id="calcBtn" aria-label="Посчитать">🧮 Посчитать</button>
     <div class="results" id="results" role="region" aria-label="Результаты"></div>
 </div>
+
 <script>
 let state = {
     rating1: "5/4",
@@ -275,7 +280,8 @@ let state = {
     numTraits: 0,
     traits: [],
     wantDeviantTrait: "no",
-    deviantMaterials: 1
+    deviantMaterials: 1,
+    results: {}
 };
 
 function setState(partial) {
@@ -284,18 +290,18 @@ function setState(partial) {
 }
 
 const traitsKey = i => `trait-${i}`;
-
 function saveTraitFields() {
     const res = [];
     for (let i = 0; i < state.numTraits; ++i) {
-        const name = document.getElementById(traitsKey(i)+"-name")?.value || "";
-        const parents = +document.getElementById(traitsKey(i)+"-parents")?.value || 0;
-        const materials = +document.getElementById(traitsKey(i)+"-materials")?.value || 0;
-        res.push({name, parents, materials});
+        res.push({
+            name: document.getElementById(traitsKey(i)+"-name")?.value || "",
+            parents: +document.getElementById(traitsKey(i)+"-parents")?.value || 0,
+            materials: +document.getElementById(traitsKey(i)+"-materials")?.value || 0
+        });
     }
+    // retain for next
     state.traits = res;
 }
-
 function renderTraitFields() {
     let n = state.numTraits;
     let c = document.getElementById('traitsContainer');
@@ -312,312 +318,265 @@ function renderTraitFields() {
         </div></div>`;
     }
 }
-
 function focusFirstError() {
     const err = document.querySelector('input.error, select.error');
     if (err) { err.focus(); err.scrollIntoView({behavior:"smooth",block:"center"}); }
 }
-
 function autoparseRating(val) {
-    val = val.replace(/\s+/g,"").toLowerCase();
+    val = val.replace(/\s+/g,"");
     if (/^[1-5]{2}$/.test(val)) return val[0]+"/"+val[1];
     let m = val.match(/^([1-5])[\/:\-\s]+([1-5])$/);
     if (m) return m[1]+"/"+m[2];
     return val;
 }
-
-function validateForm(show = true) {
+function validateForm(show=true) {
     let valid = true;
-    function setErr(id, msg) {
-        const el = document.getElementById(id);
-        if (show && el) el.classList.add("error");
-        const errDiv = document.getElementById(id+"Error") || document.getElementById(id+"Err");
+    function setErr(id,msg) {
+        let el = document.getElementById(id);
+        if (show) { el && (el.classList.add("error")); }
+        let errDiv = document.getElementById(id+"Error")||document.getElementById(id+"Err");
         if (errDiv) { errDiv.classList.add("show"); errDiv.textContent = msg; }
     }
     function clrErr(id) {
-        const el = document.getElementById(id);
-        if (el) el.classList.remove("error");
-        const errDiv = document.getElementById(id+"Error") || document.getElementById(id+"Err");
+        let el = document.getElementById(id);
+        el && el.classList.remove("error");
+        let errDiv = document.getElementById(id+"Error")||document.getElementById(id+"Err");
         if (errDiv) { errDiv.classList.remove("show"); errDiv.textContent = ""; }
     }
-
     // Рейтинг
-    const r1Raw = document.getElementById("rating1").value;
-    const r2Raw = document.getElementById("rating2").value;
-    const r1 = autoparseRating(r1Raw);
-    const r2 = autoparseRating(r2Raw);
-    document.getElementById("rating1").value = r1;
-    document.getElementById("rating2").value = r2;
-    const rTest = /^[1-5]\/[1-5]$/;
-    if (!rTest.test(r1)) { setErr("rating1", "Формат 1–5/1–5"); valid = false; } else clrErr("rating1");
-    if (!rTest.test(r2)) { setErr("rating2", "Формат 1–5/1–5"); valid = false; } else clrErr("rating2");
-
-    // Тип
-    if (state.sameType === "no") {
-        const v = +document.getElementById("typeMaterials").value;
-        if (v < 0 || v > 3) { setErr("typeMaterials", "0–3"); valid = false; } else clrErr("typeMaterials");
+    let r1 = (document.getElementById("rating1").value=autoparseRating(document.getElementById("rating1").value));
+    let r2 = (document.getElementById("rating2").value=autoparseRating(document.getElementById("rating2").value));
+    let rTest = /^[1-5]\/[1-5]$/;
+    if (!rTest.test(r1)) { setErr("rating1","Формат 1–5/1–5"); valid =false; } else clrErr("rating1");
+    if (!rTest.test(r2)) { setErr("rating2","Формат 1–5/1–5"); valid =false; } else clrErr("rating2");
+    // Тип материала
+    if (state.sameType==="no") {
+        let v = +document.getElementById("typeMaterials").value;
+        if (v<0||v>3) { setErr("typeMaterials","0–3"); valid=false; } else clrErr("typeMaterials");
     }
-
     // Девиант
-    if (state.wantDeviantTrait === "yes") {
-        const v = +document.getElementById("deviantMaterials").value;
-        if (v < 1 || v > 3) { setErr("deviantMaterials", "1–3"); valid = false; } else clrErr("deviantMaterials");
+    if (state.wantDeviantTrait==="yes") {
+        let v = +document.getElementById("deviantMaterials").value;
+        if (v<1||v>3) { setErr("deviantMaterials","1–3"); valid=false; } else clrErr("deviantMaterials");
     }
-
-    // Черты
-    const n = Math.min(4, Math.max(0, +document.getElementById("numTraits").value || 0));
-    document.getElementById("numTraits").value = n;
-    if (n < 0 || n > 4) { setErr("numTraits", "0–4"); valid = false; } else clrErr("numTraits");
+    // Кол-во черт
+    let n = +document.getElementById("numTraits").value;
+    if (n<0||n>4) { setErr("numTraits","0–4"); valid=false; } else clrErr("numTraits");
 
     for (let i = 0; i < n; ++i) {
-        const pval = +document.getElementById(traitsKey(i)+"-parents").value;
+        let pval = +document.getElementById(traitsKey(i)+"-parents").value;
         if (pval < 0 || pval > 2) { setErr(traitsKey(i)+"-parents", "0–2"); valid = false; } else clrErr(traitsKey(i)+"-parents");
-        const mval = +document.getElementById(traitsKey(i)+"-materials").value;
+        let mval = +document.getElementById(traitsKey(i)+"-materials").value;
         if (mval < 0 || mval > 3) { setErr(traitsKey(i)+"-materials", "0–3"); valid = false; } else clrErr(traitsKey(i)+"-materials");
     }
-
     return valid;
 }
 
 function getRatingDistribution(r1s, r2s, target) {
-    const parse = s => { const [m, p] = s.split('/'); return {m: +m, p: +p}; };
-    const r1 = parse(r1s), r2 = parse(r2s);
-    const baseM = Math.round((r1.m + r2.m) / 2);
-    const baseP = Math.round((r1.p + r2.p) / 2);
-
-    const dist = {};
-    let totalWeight = 0;
-
-    // Same
-    const sameKey = `${baseM}/${baseP}`;
-    dist[sameKey] = {prob: 45, type: 'same'};
-    totalWeight += 45;
-
-    // Upgrades +1
-    const upgrades = [];
-    if (baseM < 5) upgrades.push(`${baseM + 1}/${baseP}`);
-    if (baseP < 5) upgrades.push(`${baseM}/${baseP + 1}`);
-    const upWeight = upgrades.length ? 32 / upgrades.length : 0;
-    upgrades.forEach(k => {
-        dist[k] = {prob: (dist[k]?.prob || 0) + upWeight, type: 'upgrade'};
-        totalWeight += upWeight;
-    });
-
-    // Downgrades -1
-    const downgrades = [];
-    if (baseM > 1) downgrades.push(`${baseM - 1}/${baseP}`);
-    if (baseP > 1) downgrades.push(`${baseM}/${baseP - 1}`);
-    const downWeight = downgrades.length ? 18 / downgrades.length : 0;
-    downgrades.forEach(k => {
-        dist[k] = {prob: (dist[k]?.prob || 0) + downWeight, type: 'downgrade'};
-        totalWeight += downWeight;
-    });
-
-    // Extremes ±2
-    const extremes = [];
-    if (baseM <= 3) extremes.push(`${baseM + 2}/${baseP}`);
-    if (baseP <= 3) extremes.push(`${baseM}/${baseP + 2}`);
-    if (baseM >= 3) extremes.push(`${baseM - 2}/${baseP}`);
-    if (baseP >= 3) extremes.push(`${baseM}/${baseP - 2}`);
-    const uniqueExt = [...new Set(extremes.filter(k => !dist[k]))];
-    const extWeight = uniqueExt.length ? 5 / uniqueExt.length : 0;
-    uniqueExt.forEach(k => {
-        dist[k] = {prob: extWeight, type: 'extreme'};
-        totalWeight += extWeight;
-    });
-
-    // Нормализация
-    let targetProb = 0;
-    for (const k in dist) {
-        dist[k].prob = +(dist[k].prob / totalWeight * 100).toFixed(2);
-        if (target === k) targetProb = dist[k].prob;
-        else if (target === 'upgrade' && dist[k].type === 'upgrade') targetProb += dist[k].prob;
-        else if (target === 'same' && dist[k].type === 'same') targetProb += dist[k].prob;
-    }
-
-    return {distribution: dist, targetProb};
+    // Эмпирическая модель — учитывает невозможные upgrade/downgrade/extreme
+    let parse = s => { let p = s.split('/'); return {m:+p[0], pw:+p[1]}; };
+    let r1 = parse(r1s), r2 = parse(r2s);
+    let avM = Math.round((r1.m+r2.m)/2), avP = Math.round((r1.pw+r2.pw)/2);
+    let variants = [];
+    let dist = {};
+    let total = 0;
+    // Без изменений (same)
+    dist[`${avM}/${avP}`] = {prob:45, type:'same'};
+    total+=45;
+    // Upgrades
+    let upgrades = [];
+    if (avM<5) upgrades.push(`${avM+1}/${avP}`);
+    if (avP<5) upgrades.push(`${avM}/${avP+1}`);
+    if (avM<5&&avP<5) upgrades.push(`${avM+1}/${avP+1}`);
+    upgrades = [...new Set(upgrades)];
+    let uP = upgrades.length?32/upgrades.length:0;
+    for (let u of upgrades) {dist[u]={prob:uP,type:'upgrade'};total+=uP;}
+    // Downgrades
+    let downs = [];
+    if (avM>1) downs.push(`${avM-1}/${avP}`);
+    if (avP>1) downs.push(`${avM}/${avP-1}`);
+    downs = [...new Set(downs)];
+    let dP = downs.length?18/downs.length:0;
+    for (let d of downs) {dist[d]={prob:dP,type:'downgrade'};total+=dP;}
+    // Extremes: ±2 в любую сторону если возможно
+    let ex = [];
+    if (avM<4) ex.push(`${avM+2}/${avP}`);
+    if (avP<4) ex.push(`${avM}/${avP+2}`);
+    if (avM>2) ex.push(`${avM-2}/${avP}`);
+    if (avP>2) ex.push(`${avM}/${avP-2}`);
+    ex = [...new Set(ex.filter(k=>!dist[k]))];
+    let eP = ex.length?5/ex.length:0; // ~5% на все extremes суммарно
+    for (let e of ex) {dist[e]={prob:eP,type:'extreme'};total+=eP;}
+    // Нормализация к 100
+    for (let k in dist) dist[k].prob = +(dist[k].prob/total*100).toFixed(2);
+    // Target
+    let tprob = dist[target]?dist[target].prob:0;
+    return {distribution:dist, targetKey:target, targetProb:tprob};
 }
-
 function getTypesProb(sameType, typeMaterials) {
-    if (sameType === "yes") return 100;
-    return [50, 65, 75, 80][typeMaterials] || 50;
+    if (sameType==="yes") return 100;
+    if (typeMaterials===0) return 50;
+    if (typeMaterials===1) return 65;
+    if (typeMaterials===2) return 75;
+    return 80;
 }
-
-function getTraitProb(parents, materials) {
-    if (parents === 2) return 1;
-    if (parents === 1) return 0.5 + materials * 0.1;
-    return materials > 0 ? materials * 0.1 : 0;
+function getTraitProb(parents, mats) {
+    // Модель: 2 parents = 100%, 1 parent — linear, clean, true boost в игре выше!
+    if (parents===2) return 1;
+    if (parents===1) return 0.5+mats*0.1;
+    return 0;
 }
-
 function getDeviantProb(mats) {
-    return 1 - Math.pow(0.75, Math.max(1, Math.min(3, mats)));
+    return 1-Math.pow(0.75,Math.max(0,Math.min(3,mats)));
 }
 
-function calculateFusionRealtime() {
-    if (!validateForm(false)) return;
+function calculateFusionRealtime(ev) {
+    if(!validateForm(false)) return;
 
-    const rating1 = autoparseRating(document.getElementById("rating1").value);
-    const rating2 = autoparseRating(document.getElementById("rating2").value);
-    const targetRating = document.getElementById("targetRating").value;
-    const sameType = document.getElementById("sameType").value;
-    const typeMaterials = +document.getElementById("typeMaterials")?.value || 0;
-    const numTraits = +document.getElementById("numTraits").value || 0;
-    const wantDeviantTrait = document.getElementById("wantDeviantTrait").value;
-    const deviantMaterials = +document.getElementById("deviantMaterials")?.value || 1;
+    // Read all текущие значения
+    let rating1 = autoparseRating(document.getElementById("rating1").value);
+    let rating2 = autoparseRating(document.getElementById("rating2").value);
+    let targetRating = document.getElementById("targetRating").value;
+    let sameType = document.getElementById("sameType").value;
+    let typeMaterials = +document.getElementById("typeMaterials")?.value || 0;
+    let numTraits = +document.getElementById("numTraits").value || 0;
+    let wantDeviantTrait = document.getElementById("wantDeviantTrait").value;
+    let deviantMaterials = +document.getElementById("deviantMaterials")?.value || 1;
 
     saveTraitFields();
 
-    const typeProb = getTypesProb(sameType, typeMaterials);
-    const {distribution, targetProb: ratingProb} = getRatingDistribution(rating1, rating2, targetRating);
+    // Тип
+    let typeProb = getTypesProb(sameType, typeMaterials);
 
-    const traitList = state.traits.slice(0, numTraits).map((t, i) => ({
-        name: t.name || `Черта ${i+1}`,
-        prob: getTraitProb(t.parents, t.materials)
-    }));
-    const traitsProb = traitList.reduce((a, t) => a * t.prob, 1);
-
-    const deviantProb = wantDeviantTrait === "yes" ? getDeviantProb(deviantMaterials) : 1;
-
-    const total = (typeProb / 100) * (ratingProb / 100) * (numTraits ? traitsProb : 1) * deviantProb;
-
-    renderResults(typeProb, distribution, targetRating, traitList, deviantProb, total, wantDeviantTrait === "yes");
-    document.getElementById("live-region").textContent = `Финальный шанс: ${(total * 100).toFixed(2)}%`;
-}
-
-function renderResults(typeProb, dist, target, traits, deviantProb, total, showDeviant) {
-    let html = `<div class="result-item"><span class="result-label">Вероятность типа</span><span class="result-value">${typeProb.toFixed(1)}%</span></div>`;
-    
-    html += `<div class="rating-breakdown"><h4>Распределение рейтинга</h4>`;
-    const sorted = Object.keys(dist).sort((a, b) => dist[b].prob - dist[a].prob);
-    for (const k of sorted) {
-        const info = dist[k];
-        const isTarget = (target === k) || (target === 'upgrade' && info.type === 'upgrade') || (target === 'same' && info.type === 'same');
-        const badge = isTarget ? '<span class="badge target-badge">ЦЕЛЬ</span>' : '';
-        const color = info.prob >= 30 ? '#13ec8d' : info.prob >= 12 ? '#f6c23e' : '#ff5151';
-        html += `<div class="rating-option ${info.type} ${isTarget ? 'target' : ''}">
+    // Рейтинг
+    let distObj = getRatingDistribution(rating1, rating2, targetRating);
+    let ratingProb = distObj.targetProb;
+    // Черты
+    let traitFieldList = [];
+    for(let i=0;i<numTraits;i++){
+        let t = state.traits[i]||{name:`Черта ${i+1}`,parents:0,materials:0};
+        let prob = getTraitProb(+t.parents,+t.materials);
+        traitFieldList.push({name:t.name||`Черта ${i+1}`, parents:+t.parents, materials:+t.materials, prob});
+    }
+    let traitsProb = traitFieldList.reduce((a,t)=>a*t.prob,1);
+    // Девиант
+    let deviantProb = wantDeviantTrait==="yes"?getDeviantProb(deviantMaterials):1;
+    // Итоговая вероятность
+    let total = 1.0*typeProb/100*ratingProb/100*(numTraits?traitsProb:1)*(wantDeviantTrait==="yes"?deviantProb:1);
+    // Рендер результатов
+    let html = "";
+    html += `<div class="result-item"><span class="result-label">Вероятность типа</span><span class="result-value">${typeProb.toFixed(1)}%</span></div>`;
+    html += `<div class="rating-breakdown"><h4>📊 Распределение вероятностей рейтинга</h4>`;
+    let keys = Object.keys(distObj.distribution).sort((a,b)=>distObj.distribution[b].prob-distObj.distribution[a].prob);
+    for(let k of keys){
+        let info = distObj.distribution[k];
+        let badge = (k===distObj.targetKey)?'<span class="badge target-badge">ЦЕЛЬ</span>':'';
+        let color=(info.prob>=30)?'#13ec8d':(info.prob>=12)?'#f6c23e':'#ff5151';
+        html += `<div class="rating-option${k===distObj.targetKey?' target':''}">
             <span class="rating-name">${k}${badge}</span>
             <span class="rating-prob" style="color:${color}">${info.prob.toFixed(1)}%</span>
-            <div class="rating-bar"><div class="rating-bar-fill" style="width:${info.prob * 2}%"></div></div>
+            <div class="rating-bar"><div class="rating-bar-fill" style="width:${Math.min(info.prob*2,100)}%"></div></div>
         </div>`;
     }
     html += `</div>`;
-
-    if (traits.length > 0) {
-        html += `<div class="traits-breakdown"><h4>Наследование черт</h4><div id="traitsOptions"></div>
-            <div class="trait-combinations"><div class="trait-combinations-title">Комбинации:</div><div id="combinationsList"></div></div></div>`;
+    html += (numTraits?`<div class="traits-breakdown">
+        <h4>✨ Вероятности наследования черт</h4>
+        <div id="traitsOptions"></div>
+        <div class="trait-combinations" id="traitCombinations">
+            <div class="trait-combinations-title">Возможные комбинации черт:</div>
+            <div id="combinationsList"></div>
+        </div>
+    </div>`:"");
+    if(wantDeviantTrait==="yes"){
+        html += `<div class="result-item"><span class="result-label">Девиантная черта</span>`;
+        html += `<span class="result-value">${(deviantProb*100).toFixed(1)}%</span></div>`;
     }
-
-    if (showDeviant) {
-        html += `<div class="result-item"><span class="result-label">Девиантная черта</span><span class="result-value">${(deviantProb * 100).toFixed(1)}%</span></div>`;
-    }
-
-    const attempts = total > 0 ? (1 / total).toFixed(1) : "∞";
-    const colorClass = total >= 0.5 ? 'high' : total >= 0.2 ? 'medium' : 'low';
-
-    html += `<div class="final-result">
-        <h3>Финальный шанс</h3>
-        <div class="big-number ${colorClass}">${(total * 100).toFixed(2)}%</div>
-        <div class="attempts">Попыток: <strong>${attempts}</strong></div>
-    </div>
-    <div class="info-box" style="margin-bottom:5px;">
-        <b>Интерпретация:</b><br>
-        • <span style="color:#13ec8d;">≥50%</span> — 1–2 попытки<br>
-        • <span style="color:#f6c23e;">20–49%</span> — 2–5 попыток<br>
-        • <span style="color:#ff5151;"><20%</span> — 5+ попыток
-    </div>`;
-
-    const results = document.getElementById("results");
-    results.innerHTML = html;
-    results.classList.add("show");
-
-    if (traits.length > 0) renderTraitsDetailed(traits);
+    html += `<div class="final-result"><h3>Финальный шанс успеха</h3>
+        <div class="big-number" style="${total>=.5?'color:#13ec8d;':total>=.2?'color:#f6c23e;':'color:var(--error);'}">${(total*100).toFixed(2)}%</div>
+        <div class="attempts">Ожидаемо попыток: <strong>${total>0?(100/(total*100)).toFixed(1):"∞"}</strong></div></div>
+        <div class="info-box" style="margin-bottom:5px;"><b>Интерпретация:</b>
+        <br>• <span style="color:#13ec8d;">≥50%</span> — Высокий шанс (1–2 попытки)
+        <br>• <span style="color:#f6c23e;">20–49%</span> — Средний (2–5 попыток)
+        <br>• <span style="color:#ff5151">&lt;20%</span> — Низкий (5+ попыток)</div>
+    `;
+    document.getElementById("results").innerHTML = html;
+    document.getElementById("results").classList.add("show");
+    // Подключить детали по чертам и комбинациям
+    if (numTraits>0) renderTraitsDetailed(traitFieldList);
+    // live-region для accessibility
+    document.getElementById("live-region").textContent = `Вероятность цели: ${(total*100).toFixed(2)}%`;
 }
 
 function renderTraitsDetailed(traits) {
-    const container = document.getElementById("traitsOptions");
-    const combList = document.getElementById("combinationsList");
-    if (!container || !combList) return;
-
-    container.innerHTML = "";
-    traits.forEach(t => {
-        const pct = t.prob * 100;
-        const cls = pct >= 80 ? "guaranteed" : pct >= 60 ? "high-prob" : pct >= 40 ? "medium-prob" : "low-prob";
-        const badge = pct === 100 ? '<span class="badge guaranteed-badge">100%</span>' : '';
-        container.innerHTML += `<div class="trait-option ${cls}">
+    // Подробная детализация вероятностей черт + комбинации
+    let c = document.getElementById("traitsOptions");
+    if (!c) return;
+    c.innerHTML = "";
+    for (let t of traits) {
+        let pct = t.prob*100;
+        let typeClass = pct>=80?"guaranteed":pct>=60?"high-prob":pct>=40?"medium-prob":"low-prob";
+        let badge = pct==100?'<span class="badge guaranteed-badge">100%</span>':'';
+        c.innerHTML += `<div class="trait-option ${typeClass}">
             <span class="trait-name">${t.name}${badge}</span>
             <span class="trait-prob">${pct.toFixed(1)}%</span>
             <div class="trait-bar"><div class="trait-bar-fill" style="width:${pct}%"></div></div>
         </div>`;
-    });
-
-    // Все комбинации
-    const n = traits.length;
-    for (let mask = 0; mask < (1 << n); mask++) {
-        if (mask === 0) continue;
-        let prob = 1;
-        let names = [];
-        for (let i = 0; i < n; i++) {
-            if (mask & (1 << i)) {
-                prob *= traits[i].prob;
-                names.push(traits[i].name);
-            } else {
-                prob *= (1 - traits[i].prob);
-            }
-        }
-        if (prob < 0.001) continue;
-        const text = names.length === n ? `Все ${n}` : names.length === 0 ? "Без черт" : names.join(", ");
-        combList.innerHTML += `<div class="combo-item"><span class="combo-traits">${text}</span><span class="combo-prob">${(prob * 100).toFixed(1)}%</span></div>`;
     }
+    // Комбинации черт
+    let combDiv = document.getElementById("combinationsList");
+    if (!combDiv) return;
+    let N = traits.length;
+    // Все черты сохр.
+    let probAll = traits.reduce((a,t)=>a*t.prob,1);
+    combDiv.innerHTML = `<div class="combo-item"><span class="combo-traits">Все ${N} черт</span><span class="combo-prob">${(probAll*100).toFixed(1)}%</span></div>`;
+    // Без одной
+    if (N>1) for(let i=0;i<N;++i) {
+        let p=traits.reduce((a,t,j)=>a*(i==j?(1-t.prob):t.prob),1);
+        if (p>0.001) combDiv.innerHTML += `<div class="combo-item"><span class="combo-traits">${traits.filter((_,j)=>i!=j).map(tt=>tt.name).join(", ")}</span><span class="combo-prob">${(p*100).toFixed(1)}%</span></div>`;
+    }
+    let none = traits.reduce((a,t)=>a*(1-t.prob),1);
+    if (none>0.001) combDiv.innerHTML += `<div class="combo-item"><span class="combo-traits">Без черт</span><span class="combo-prob">${(none*100).toFixed(1)}%</span></div>`;
 }
 
-// === Слушатели ===
-document.querySelectorAll("input, select").forEach(el => {
-    el.addEventListener("input", () => {
-        if (el.id.startsWith("trait-")) saveTraitFields();
-        setTimeout(calculateFusionRealtime, 10);
-    });
-});
+// ========== СЛУШАТЕЛИ ДЛЯ REALTIME ===============
+document.querySelectorAll("input,select").forEach(e=>e.addEventListener("input",()=>{if(e.id.startsWith("trait-")) saveTraitFields(); setTimeout(calculateFusionRealtime,1);}));
+document.getElementById("calcBtn").addEventListener("click",()=>{if(validateForm(true)) calculateFusionRealtime();focusFirstError();});
 
-document.getElementById("calcBtn").addEventListener("click", () => {
-    if (validateForm(true)) {
-        calculateFusionRealtime();
-        focusFirstError();
-    }
-});
-
-document.getElementById("numTraits").addEventListener("input", function() {
-    let n = Math.min(4, Math.max(0, +this.value || 0));
-    this.value = n;
-    saveTraitFields();
+document.getElementById("numTraits").addEventListener("input", function(){
+    saveTraitFields(); // сохраним! (до смены)
+    let n = +(this.value)||0;
+    let prev = state.traits || [];
     renderTraitFields();
     state.numTraits = n;
-    state.traits = state.traits.slice(0, n);
-    for (let i = state.traits.length; i < n; i++) {
-        state.traits[i] = {name: "", parents: 1, materials: 3};
-    }
-    setTimeout(calculateFusionRealtime, 10);
+    // восстановить значения, если уменьшают numTraits (3→2)
+    let next = [];
+    for(let i=0;i<n;++i) next[i]=prev[i]||{name:"", parents:1, materials:3};
+    state.traits = next;
+    saveTraitFields();
+    setTimeout(()=>calculateFusionRealtime(),1);
 });
-
-document.getElementById('sameType').addEventListener('change', function() {
-    document.getElementById('materialsGroup').style.display = this.value === 'no' ? 'block' : 'none';
-    setState({sameType: this.value});
-});
-
-document.getElementById('wantDeviantTrait').addEventListener('change', function() {
-    document.getElementById('deviantMaterialsGroup').style.display = this.value === 'yes' ? 'block' : 'none';
-    setState({wantDeviantTrait: this.value});
-});
-
-document.querySelectorAll('.info-icon').forEach(el => {
-    el.addEventListener('keydown', e => {
-        if (e.key === "Enter" || e.key === " ") el.classList.toggle('active');
-        if (e.key === "Escape") el.classList.remove('active');
-    });
-    el.addEventListener('blur', () => el.classList.remove('active'));
-});
-
-// Инициализация
+// Trigger fields first render
 renderTraitFields();
+
+// Показывать/скрывать материалы по типу родителей и девиантному выбору
+document.getElementById('sameType').addEventListener('change',function(){document.getElementById('materialsGroup').style.display=(this.value==='no')?'block':'none'; setState({sameType:this.value});});
+document.getElementById('wantDeviantTrait').addEventListener('change',function(){document.getElementById('deviantMaterialsGroup').style.display=(this.value==='yes')?'block':'none'; setState({wantDeviantTrait:this.value});});
+
+document.querySelectorAll('.info-icon').forEach(el=>{
+    el.addEventListener('keydown',function(e){
+        if(e.key==="Enter"||e.key===" "){el.classList.toggle('active');}
+        if(e.key==="Escape"){el.classList.remove('active');}
+    });
+    el.addEventListener('blur',function(){el.classList.remove('active');});
+});
+
+// Live: фокус на первое ошибочное поле
+document.querySelector('body').addEventListener("input", function() {
+    let err = document.querySelector('input.error,select.error');
+    if(err) setTimeout(()=>{err.focus();},80);
+});
+
+// --- Live realtime calc ---
 calculateFusionRealtime();
 </script>
 </body>
